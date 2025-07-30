@@ -1,27 +1,36 @@
 ﻿using dotrestapiwithmongo.Models;
 using dotrestapiwithmongo.Services;
+using DotNetEnv;
 using Microsoft.OpenApi.Models;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // ----------------------------------------------
-// 📦 MongoDB Configuration from appsettings.json
+// 🌱 Load .env file and bind MongoDBSettings
 // ----------------------------------------------
-builder.Services.Configure<MongoDBSettings>(
-    builder.Configuration.GetSection("MongoDBSettings"));
+DotNetEnv.Env.Load(); // Load .env file from project root
 
-// 🧠 Register custom service to handle MongoDB logic
-builder.Services.AddSingleton<StudentService>();
+var mongoSettings = new MongoDBSettings
+{
+    ConnectionString = Environment.GetEnvironmentVariable("MONGO_CONN"),
+    DatabaseName = Environment.GetEnvironmentVariable("MONGO_DB_NAME"),
+    StudentsCollection = Environment.GetEnvironmentVariable("MONGO_COLLECTION")
+};
 
 // ----------------------------------------------
-// 🔧 Add services required for Web API
+// 💉 Register dependencies (DI)
+// ----------------------------------------------
+builder.Services.AddSingleton(mongoSettings);       // Inject MongoDB settings
+builder.Services.AddSingleton<StudentService>();    // Inject StudentService
+
+// ----------------------------------------------
+// 🔧 Web API setup
 // ----------------------------------------------
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
 // ----------------------------------------------
 // 📘 Swagger setup (OpenAPI)
-// - Also add server URL to force Swagger to use HTTPS
 // ----------------------------------------------
 builder.Services.AddSwaggerGen(options =>
 {
@@ -31,15 +40,15 @@ builder.Services.AddSwaggerGen(options =>
         Version = "v1"
     });
 
-    // Make sure Swagger uses HTTPS
+    // Force Swagger to use HTTPS
     options.AddServer(new OpenApiServer
     {
-        Url = "https://localhost:7103" // ❗ Replace with your actual HTTPS port
+        Url = "https://localhost:7103" // Replace with your actual HTTPS port if different
     });
 });
 
 // ----------------------------------------------
-// 🌐 CORS Policy - to allow Swagger UI & browser requests
+// 🌐 CORS Policy
 // ----------------------------------------------
 builder.Services.AddCors(options =>
 {
@@ -54,21 +63,18 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // ----------------------------------------------
-// 🌍 Enable Swagger UI only in Development
+// 🌍 Enable Swagger always (Dev or Prod)
 // ----------------------------------------------
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 // ----------------------------------------------
 // 🛣️ Middleware Pipeline
 // ----------------------------------------------
-app.UseHttpsRedirection();    // Redirect HTTP → HTTPS
-app.UseCors("AllowAll");      // Enable the CORS policy
-app.UseAuthorization();       // Authorization middleware
-app.MapControllers();         // Map API controller routes
+app.UseHttpsRedirection();
+app.UseCors("AllowAll");
+app.UseAuthorization();
+app.MapControllers();
 
 // 🚀 Run the app
 app.Run();
