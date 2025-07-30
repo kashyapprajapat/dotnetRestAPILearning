@@ -43,7 +43,7 @@ builder.Services.AddSwaggerGen(options =>
     // Force Swagger to use HTTPS
     options.AddServer(new OpenApiServer
     {
-        Url = "https://localhost:7103" // Replace with your actual HTTPS port if different
+        Url = "/"
     });
 });
 
