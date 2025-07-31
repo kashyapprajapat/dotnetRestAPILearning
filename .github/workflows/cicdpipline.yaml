@@ -1,9 +1,7 @@
-name: Build & Push Docker Image
+name: Build & Push Docker Image to Docker Hub
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
     branches: [ main ]
 
 jobs:
@@ -12,21 +10,7 @@ jobs:
 
     steps:
       - name: ⬇️ Checkout code
-        uses: actions/checkout@v3
-
-      - name: 🔧 Set up .NET SDK
-        uses: actions/setup-dotnet@v3
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: 🧪 Restore dependencies
-        run: dotnet restore
-
-      - name: 🛠️ Build project
-        run: dotnet build --no-restore
-
-      - name: ✅ Run tests (optional)
-        run: dotnet test --no-build --verbosity normal
+        uses: actions/checkout@v4
 
       - name: 🐳 Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -37,9 +21,20 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: 📦 Build & Push Docker image
+      - name: 📦 Build and Push Docker Image
         uses: docker/build-push-action@v5
         with:
           context: .
+          file: ./Dockerfile
           push: true
-          tags: kashyapprajapat/dotnetrestapi:latest
+          tags: |
+            kashyapprajapat/dotnetrestapi:latest
+            kashyapprajapat/dotnetrestapi:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: ✅ Image pushed successfully
+        run: |
+          echo "🎉 Docker image pushed successfully!"
+          echo "📍 Image: kashyapprajapat/dotnetrestapi:latest"
+          echo "📍 Tag: kashyapprajapat/dotnetrestapi:${{ github.sha }}"
