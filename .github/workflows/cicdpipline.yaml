@@ -1,4 +1,4 @@
-name: Docker Build and Push
+name: Docker Build and Push for the dotnetrestpai with mongodb
 
 on:
   push:
